@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using NAudio.Wave;
 
 namespace SoundToImage
@@ -20,6 +16,7 @@ namespace SoundToImage
             if (args.Length < 1)
             {
                 Console.WriteLine("Please add a file.");
+                return;
             }
             AudioToArray(args[0], out left, out right);
             Console.WriteLine("{0}[{1},{2}]",Path.GetFileName(args[0]),left.Length,right.Length);
@@ -28,22 +25,54 @@ namespace SoundToImage
             int vertical = left.Length/horizontal + 1;
             Console.WriteLine(left.Where(c=>Math.Abs(c) < 0.00000000001).Count());
             Bitmap bitmap = new Bitmap(horizontal,vertical);
-            for (int i = 0; i < vertical; i++)
+            for (int y = 0; y < vertical; y++)
             {
-                for (int j = 0; j < horizontal; j++)
+                for (int x = 0; x < horizontal; x++)
                 {
-                    int index = i*horizontal + j;
-                    bitmap.SetPixel(j, i, index < left.Length ? ColorFromHsv(360.0*Math.Abs(left[index]),1.0, 0.5) : Color.FromArgb(0, 0, 0));
+                    int index = y*horizontal + x;
+                    bitmap.SetPixel(x, y, index < left.Length ? ColorFromHsv(180*(left[index]+1.0),right[index]/2.0f + 0.5f, 0.5) : Color.FromArgb(0, 0, 0));
                 }
             }
-            bitmap.Save("output.bmp");
-            Console.WriteLine("Written output file.");
+            bitmap.Save($"{Path.GetFileNameWithoutExtension(args[0])}.bmp",ImageFormat.Bmp);
+            Console.WriteLine("Written output image.");
+            GetMp3FromImage($"{Path.GetFileNameWithoutExtension(args[0])}.bmp");
+            Console.WriteLine("Written MP3 from image.");
         }
 
+        public static void GetMp3FromImage(string filename)
+        {
+            WaveFormat waveFormat = new WaveFormat(44100, 16, 2);
+            using (WaveFileWriter wfw = new WaveFileWriter($"{Path.GetFileNameWithoutExtension(filename)}.wav", waveFormat))
+            {
+                Image image = Image.FromFile(filename);
+                Bitmap bitmap = new Bitmap(image);
+                for (int y = 0; y < bitmap.Height; y++)
+                {
+                    for (int x = 0; x < bitmap.Width; x++)
+                    {
+                        var color = bitmap.GetPixel(x, y);
+                        float hue, saturation, value;
+                        ColorToHsv(color, out hue, out saturation, out value);
+                        wfw.WriteSample((hue - 180) / 180.0f);
+                        wfw.WriteSample((saturation - 0.5f)*2.0f);
+                    }
+                }
+            }
+        }
+
+        public static void ColorToHsv(Color color, out float hue, out float saturation, out float value)
+        {
+            int max = Math.Max(color.R, Math.Max(color.G, color.B));
+            int min = Math.Min(color.R, Math.Min(color.G, color.B));
+
+            hue = color.GetHue();
+            saturation = (float) (max == 0 ? 0 : 1d - (1d * min / max));
+            value = (float) (max / 255d);
+        }
 
         public static Color ColorFromHsv(double hue, double saturation, double value)
         {
-            //Thank you to whoever it was from StackOverflow for providing this code.
+            //http://stackoverflow.com/questions/359612/how-to-change-rgb-color-to-hsv
             int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
             double f = hue / 60 - Math.Floor(hue / 60);
 

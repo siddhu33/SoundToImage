@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>"C:\Users\Siddharth\Music\AC-DC\05. AC DC - Back In Black.mp3"</StartArguments>
+    <StartArguments>"C:\Users\Siddharth\Music\Queen - The Ultimate Best Of Queen %282011%29\21. Who Wants To Live Forever.mp3"</StartArguments>
   </PropertyGroup>
 </Project>
